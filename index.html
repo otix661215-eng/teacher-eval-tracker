@@ -636,15 +636,43 @@ function populateSemesters() {
   sel3.value = cur3 || 'all';
 }
 
-// ============ 資料存取 ============
-function getActivities() {
+// ============ 資料存取（雲端 + 本機快取） ============
+const DATA_URL = 'https://otix661215-eng.github.io/teacher-eval-tracker/data.json';
+let remoteActivities = [];
+let dataLoaded = false;
+
+async function loadRemoteData() {
+  try {
+    const resp = await fetch(DATA_URL + '?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    remoteActivities = data.activities || [];
+    // 同步到本機快取
+    localStorage.setItem('teacher-eval-activities', JSON.stringify(remoteActivities));
+    dataLoaded = true;
+    return remoteActivities;
+  } catch (e) {
+    console.warn('遠端載入失敗，使用本機快取:', e);
+    dataLoaded = true;
+    return getLocalCache();
+  }
+}
+
+function getLocalCache() {
   try {
     return JSON.parse(localStorage.getItem('teacher-eval-activities') || '[]');
   } catch { return []; }
 }
 
+function getActivities() {
+  // 優先使用已載入的遠端資料，其次本機快取
+  return remoteActivities.length > 0 ? remoteActivities : getLocalCache();
+}
+
 function saveActivities(arr) {
+  // 只更新本機快取（遠端由 CC 透過 git 管理）
   localStorage.setItem('teacher-eval-activities', JSON.stringify(arr));
+  remoteActivities = arr;
 }
 
 // ============ 新增活動 ============
@@ -685,7 +713,7 @@ function addActivity() {
   document.getElementById('actNote').value = '';
   document.getElementById('suggestBox').style.display = 'none';
   
-  showToast('✅ 活動已新增！');
+  showToast('✅ 活動已新增（本機）！下次重新整理會同步遠端資料。');
 }
 
 // ============ 自動分類建議 ============
@@ -1011,67 +1039,33 @@ document.getElementById('editModal').addEventListener('click', function(e) {
 });
 
 // ============ 初始化 ============
-populateSemesters();
+// 載入狀態提示
+function showLoading() {
+  const pages = ['listContainer', 'statsGrid', 'statsGrid'];
+  document.getElementById('listContainer').innerHTML = '<div class="empty"><div class="icon">⏳</div><p>載入資料中...</p></div>';
+}
+
+showLoading();
+
+// 載入遠端資料後初始化
+loadRemoteData().then(() => {
+  populateSemesters();
+  renderList();
+  renderStats();
+});
 
 // 預設今天日期
 const today = new Date();
 document.getElementById('actDate').value = today.toISOString().split('T')[0];
 
-// 如果沒有任何活動，加入示範資料（可刪除）
-if (getActivities().length === 0) {
-  const demo = [
-    {
-      id: Date.now() - 5000,
-      name: "光時代科技公司產業研習",
-      date: "2026-07-20",
-      location: "台北市長安東路一段23號8樓",
-      hours: 4,
-      desc: "教育部實作場域設備精進計畫主辦，參訪光時代科技公司，AR眼鏡Meta Quest 3應用於教學",
-      category: "teaching",
-      note: "核發4小時研習證明",
-      semester: "114-2",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: Date.now() - 4000,
-      name: "ISPM 2026 國際研討會",
-      date: "2026-05-15",
-      location: "義大利米蘭",
-      hours: 40,
-      desc: "發表論文，參加國際研討會學術交流",
-      category: "research",
-      note: "有發表證明",
-      semester: "114-2",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: Date.now() - 3000,
-      name: "招生座談會",
-      date: "2026-04-20",
-      location: "明新科大",
-      hours: 2,
-      desc: "協助系上招生宣傳座談會",
-      category: "service",
-      note: "",
-      semester: "114-2",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: Date.now() - 2000,
-      name: "指導學生專題",
-      date: "2026-04-10",
-      location: "明新科大",
-      hours: 3,
-      desc: "指導學生畢業專題製作",
-      category: "counseling",
-      note: "",
-      semester: "114-2",
-      createdAt: new Date().toISOString()
-    }
-  ];
-  saveActivities(demo);
-  populateSemesters();
-}
+// 定期檢查遠端更新（每 5 分鐘）
+setInterval(() => {
+  loadRemoteData().then(() => {
+    populateSemesters();
+    if (document.getElementById('page-list').classList.contains('active')) renderList();
+    if (document.getElementById('page-stats').classList.contains('active')) renderStats();
+  });
+}, 300000);
 </script>
 </body>
 </html>
