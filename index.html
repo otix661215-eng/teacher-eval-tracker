@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教師評鑑活動管理系統</title>
+<style>
+:root {
+  --teaching: #4CAF50;
+  --research: #2196F3;
+  --counseling: #FF9800;
+  --service: #9C27B0;
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --text: #333;
+  --border: #ddd;
+  --shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+header {
+  background: linear-gradient(135deg, #1a237e, #283593);
+  color: white;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+header h1 { font-size: 1.5em; }
+header p { font-size: 0.85em; opacity: 0.8; margin-top: 4px; }
+nav {
+  display: flex;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 68px;
+  z-index: 99;
+}
+nav button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  font-size: 1em;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+nav button.active {
+  border-bottom-color: #1a237e;
+  color: #1a237e;
+  font-weight: bold;
+}
+nav button:hover { background: #f0f0f5; }
+.page { display: none; padding: 16px; max-width: 900px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* Form */
+.form-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.form-group { margin-bottom: 14px; }
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 4px;
+  font-size: 0.95em;
+}
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1em;
+  font-family: inherit;
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-row { display: flex; gap: 12px; }
+.form-row .form-group { flex: 1; }
+
+/* Category badges */
+.cat-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.85em;
+  font-weight: bold;
+  color: white;
+}
+.cat-teaching { background: var(--teaching); }
+.cat-research { background: var(--research); }
+.cat-counseling { background: var(--counseling); }
+.cat-service { background: var(--service); }
+
+/* Auto-suggest */
+.suggest-box {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-size: 0.9em;
+}
+.suggest-box strong { color: #2e7d32; }
+.suggest-box .change-btn {
+  margin-left: 8px;
+  color: #1565c0;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 0.85em;
+}
+
+/* Activity list */
+.activity-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: var(--shadow);
+  margin-bottom: 12px;
+  border-left: 5px solid transparent;
+  transition: transform 0.15s;
+}
+.activity-card:hover { transform: translateX(4px); }
+.activity-card.teaching { border-left-color: var(--teaching); }
+.activity-card.research { border-left-color: var(--research); }
+.activity-card.counseling { border-left-color: var(--counseling); }
+.activity-card.service { border-left-color: var(--service); }
+.activity-card .title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.activity-card h3 { font-size: 1.1em; margin-bottom: 4px; }
+.activity-card .meta { font-size: 0.85em; color: #666; margin-top: 6px; }
+.activity-card .desc { margin-top: 8px; font-size: 0.9em; }
+.activity-card .actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.activity-card .actions button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.8em;
+  font-family: inherit;
+}
+.activity-card .actions button:hover { background: #f0f0f5; }
+.activity-card .actions button.del { color: #d32f2f; border-color: #ef9a9a; }
+.activity-card .actions button.del:hover { background: #ffebee; }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.filter-bar select, .filter-bar input {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9em;
+  font-family: inherit;
+}
+
+/* Dashboard */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.stat-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.stat-card .number {
+  font-size: 2.5em;
+  font-weight: bold;
+}
+.stat-card .label { font-size: 0.9em; color: #666; margin-top: 4px; }
+.stat-card .bar {
+  height: 6px;
+  border-radius: 3px;
+  margin-top: 10px;
+  background: #eee;
+}
+.stat-card .bar .fill { height: 100%; border-radius: 3px; }
+.stat-card.teaching .number, .stat-card.teaching .fill { color: var(--teaching); }
+.stat-card.teaching .fill { background: var(--teaching); }
+.stat-card.research .number, .stat-card.research .fill { color: var(--research); }
+.stat-card.research .fill { background: var(--research); }
+.stat-card.counseling .number, .stat-card.counseling .fill { color: var(--counseling); }
+.stat-card.counseling .fill { background: var(--counseling); }
+.stat-card.service .number, .stat-card.service .fill { color: var(--service); }
+.stat-card.service .fill { background: var(--service); }
+
+.chart-container {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.chart-container h3 { margin-bottom: 12px; }
+
+/* Semester selector */
+.semester-box {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.semester-box label { font-weight: bold; }
+
+/* Buttons */
+.btn-primary {
+  background: #1a237e;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: #283593; }
+.btn-secondary {
+  background: white;
+  color: #1a237e;
+  border: 1px solid #1a237e;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-secondary:hover { background: #e8eaf6; }
+.btn-export {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.9em;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-export:hover { background: #388e3c; }
+
+/* Empty state */
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999;
+}
+.empty .icon { font-size: 3em; margin-bottom: 12px; }
+
+/* Edit modal */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal h2 { margin-bottom: 16px; }
+.modal .actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  z-index: 300;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+@media (max-width: 600px) {
+  header h1 { font-size: 1.2em; }
+  .form-row { flex-direction: column; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .stat-card .number { font-size: 2em; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 教師評鑑活動管理系統</h1>
+  <p>教學 · 研究 · 輔導 · 服務 — 活動分類與管理</p>
+</header>
+
+<nav>
+  <button class="active" onclick="showPage('add', this)">➕ 新增活動</button>
+  <button onclick="showPage('list', this)">📜 活動列表</button>
+  <button onclick="showPage('stats', this)">📊 統計分析</button>
+</nav>
+
+<!-- Page: Add Activity -->
+<div id="page-add" class="page active">
+  <div class="form-card">
+    <h2 style="margin-bottom:16px;">新增活動</h2>
+    <div class="form-group">
+      <label>活動名稱 *</label>
+      <input type="text" id="actName" placeholder="例：光時代科技公司產業研習">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>活動日期 *</label>
+        <input type="date" id="actDate">
+      </div>
+      <div class="form-group">
+        <label>學期</label>
+        <select id="actSemester">
+          <option value="auto">自動判斷</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>地點</label>
+        <input type="text" id="actLocation" placeholder="例：台北市長安東路一段23號8樓">
+      </div>
+      <div class="form-group">
+        <label>時數（小時）</label>
+        <input type="number" id="actHours" step="0.5" min="0" placeholder="例：4">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>活動簡述</label>
+      <textarea id="actDesc" placeholder="簡述活動內容、主辦單位、參與對象等..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>分類</label>
+      <div id="suggestBox" style="display:none;" class="suggest-box"></div>
+      <select id="actCategory">
+        <option value="">— 待分類 —</option>
+        <option value="teaching">📖 教學</option>
+        <option value="research">🔬 研究</option>
+        <option value="counseling">🤝 輔導</option>
+        <option value="service">🏛️ 服務</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>備註（選填）</label>
+      <input type="text" id="actNote" placeholder="例：有研習證明、可計入評鑑">
+    </div>
+    <button class="btn-primary" onclick="addActivity()" style="width:100%;margin-top:8px;">新增活動</button>
+  </div>
+
+  <!-- Help: classification guide -->
+  <div class="form-card" style="font-size:0.9em;">
+    <h3 style="margin-bottom:10px;">📚 分類參考</h3>
+    <div style="display:grid;gap:8px;">
+      <div><span class="cat-badge cat-teaching">教學</span> 課程、教案、教材開發、教學研習、產學教學、實作場域</div>
+      <div><span class="cat-badge cat-research">研究</span> 研討會、論文發表、學術交流、研究計畫、實驗室參訪</div>
+      <div><span class="cat-badge cat-counseling">輔導</span> 學生指導、導師活動、學涯規劃、心理健康、學生競賽指導</div>
+      <div><span class="cat-badge cat-service">服務</span> 委員會、行政職務、校內外服務、評審、社區參與、藝文中心</div>
+    </div>
+  </div>
+</div>
+
+<!-- Page: List -->
+<div id="page-list" class="page">
+  <div class="filter-bar">
+    <select id="filterCategory" onchange="renderList()">
+      <option value="">全部分類</option>
+      <option value="teaching">📖 教學</option>
+      <option value="research">🔬 研究</option>
+      <option value="counseling">🤝 輔導</option>
+      <option value="service">🏛️ 服務</option>
+    </select>
+    <select id="filterSemester" onchange="renderList()">
+      <option value="">全部學期</option>
+    </select>
+    <input type="text" id="filterSearch" placeholder="搜尋活動名稱..." oninput="renderList()">
+    <button class="btn-export" onclick="exportCSV()">📥 匯出 CSV</button>
+  </div>
+  <div id="listContainer"></div>
+</div>
+
+<!-- Page: Stats -->
+<div id="page-stats" class="page">
+  <div class="semester-box">
+    <label>學期：</label>
+    <select id="statsSemester" onchange="renderStats()">
+      <option value="all">全部</option>
+    </select>
+  </div>
+  <div class="stats-grid" id="statsGrid"></div>
+  <div class="chart-container">
+    <h3>📊 各類活動比例</h3>
+    <div id="categoryChart" style="display:flex;gap:4px;height:30px;border-radius:6px;overflow:hidden;"></div>
+    <div id="chartLegend" style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;font-size:0.85em;"></div>
+  </div>
+  <div class="chart-container">
+    <h3>📅 月度活動趨勢</h3>
+    <div id="monthlyChart"></div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>編輯活動</h2>
+    <input type="hidden" id="editId">
+    <div class="form-group">
+      <label>活動名稱</label>
+      <input type="text" id="editName">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>日期</label>
+        <input type="date" id="editDate">
+      </div>
+      <div class="form-group">
+        <label>時數</label>
+        <input type="number" id="editHours" step="0.5" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>地點</label>
+      <input type="text" id="editLocation">
+    </div>
+    <div class="form-group">
+      <label>簡述</label>
+      <textarea id="editDesc"></textarea>
+    </div>
+    <div class="form-group">
+      <label>分類</label>
+      <select id="editCategory">
+        <option value="">— 待分類 —</option>
+        <option value="teaching">📖 教學</option>
+        <option value="research">🔬 研究</option>
+        <option value="counseling">🤝 輔導</option>
+        <option value="service">🏛️ 服務</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>備註</label>
+      <input type="text" id="editNote">
+    </div>
+    <div class="actions">
+      <button class="btn-secondary" onclick="closeEdit()">取消</button>
+      <button class="btn-primary" onclick="saveEdit()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ 分類關鍵字規則 ============
+const categoryRules = {
+  teaching: {
+    label: "教學",
+    color: "var(--teaching)",
+    keywords: [
+      "教學", "課程", "教案", "教材", "教材開發", "教學研習", "數位教學",
+      "實作場域", "產學教學", "教學觀摩", "教學評量", "課程設計",
+      "教學成效", "實境教學", "沉浸式學習", "教學法", "翻轉教室",
+      "線上教學", "混成教學", "教學工作坊", "教學精進", "技能培訓",
+      "教學演示", "課堂觀察", "同儕互評", "教學品保", "教發中心",
+      "教師成長", "教學實踐", "課綱", "教學創新"
+    ]
+  },
+  research: {
+    label: "研究",
+    color: "var(--research)",
+    keywords: [
+      "研討會", "論文", "學術", "研究計畫", "專題研究", "實驗室",
+      "學術交流", "國際研討會", "研究發表", "期刊", "研究方法",
+      "學術演講", "研究計畫撰寫", "科技部", "國科會", "產學合作",
+      "技術報告", "學術著作", "研究倫理", "學術寫作", "同儕評閱",
+      "研究計畫審查", "學術會議", "ISPM", "SEMINAR", "conference",
+      "symposium", "論文發表", "海報發表", "研究分享", "學術參訪"
+    ]
+  },
+  counseling: {
+    label: "輔導",
+    color: "var(--counseling)",
+    keywords: [
+      "輔導", "導師", "學生指導", "學涯", "職涯", "心理", "諮商",
+      "學生競賽", "指導學生", "專題指導", "畢業專題指導", "學生事務",
+      "導師會議", "學生輔導", "生涯規劃", "學生陪伴", "學習輔導",
+      "學生問題", "校園安全", "學生危機", "導師職責", "班級經營",
+      "學生出席", "學生關懷", "導生", "師生互動", "學生社群指導",
+      "社團指導", "服務學習指導"
+    ]
+  },
+  service: {
+    label: "服務",
+    color: "var(--service)",
+    keywords: [
+      "委員會", "行政", "服務", "評審", "評鑑", "校內服務", "校外服務",
+      "社區", "藝文中心", "校務", "系務", "院務", "招生", "宣傳",
+      "座談會", "籌備", "委員", "召集人", "召集", "校慶", "活動籌辦",
+      "公關", "產學接洽", "參訪", "研習", "企業參訪", "產業研習",
+      "委員會議", "校務會議", "系務會議", "院務會議", "教評會",
+      "教師評鑑", "升等", "聘任", "審查委員", "校外委員", "志工",
+      "服務證明", "行政服務", "學校代表", "出席代表", "會議代表"
+    ]
+  }
+};
+
+// ============ 分類邏輯 ============
+function suggestCategory(name, desc) {
+  const text = (name + " " + desc).toLowerCase();
+  const scores = { teaching: 0, research: 0, counseling: 0, service: 0 };
+  
+  for (const [cat, rule] of Object.entries(categoryRules)) {
+    for (const kw of rule.keywords) {
+      if (text.includes(kw.toLowerCase())) {
+        scores[cat] += kw.length > 2 ? 2 : 1; // 越長的關鍵字權重越高
+      }
+    }
+  }
+  
+  // 找出最高分
+  let best = null;
+  let bestScore = 0;
+  for (const [cat, score] of Object.entries(scores)) {
+    if (score > bestScore) {
+      bestScore = score;
+      best = cat;
+    }
+  }
+  
+  return { category: best, scores: scores };
+}
+
+// ============ 學期計算 ============
+function getSemester(dateStr) {
+  const d = new Date(dateStr);
+  const year = d.getFullYear() - 1911; // 民國年
+  const month = d.getMonth() + 1;
+  // 上學期: 8月-次年1月, 下學期: 2月-7月
+  if (month >= 8) return `${year}-1`; // 上學期
+  else if (month <= 1) return `${year-1}-1`; // 上學期跨年
+  else return `${year}-2`; // 下學期
+}
+
+function getAllSemesters() {
+  const activities = getActivities();
+  const sems = new Set();
+  activities.forEach(a => sems.add(a.semester));
+  return Array.from(sems).sort().reverse();
+}
+
+function populateSemesters() {
+  const sems = getAllSemesters();
+  // 新增活動頁
+  const sel1 = document.getElementById('actSemester');
+  const cur1 = sel1.value;
+  sel1.innerHTML = '<option value="auto">自動判斷</option>';
+  sems.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = `${s.split('-')[0]}學年度第${s.split('-')[1]}學期`;
+    sel1.appendChild(opt);
+  });
+  sel1.value = cur1 || 'auto';
+  
+  // 列表頁
+  const sel2 = document.getElementById('filterSemester');
+  const cur2 = sel2.value;
+  sel2.innerHTML = '<option value="">全部學期</option>';
+  sems.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = `${s.split('-')[0]}學年度第${s.split('-')[1]}學期`;
+    sel2.appendChild(opt);
+  });
+  sel2.value = cur2 || '';
+  
+  // 統計頁
+  const sel3 = document.getElementById('statsSemester');
+  const cur3 = sel3.value;
+  sel3.innerHTML = '<option value="all">全部</option>';
+  sems.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s;
+    opt.textContent = `${s.split('-')[0]}學年度第${s.split('-')[1]}學期`;
+    sel3.appendChild(opt);
+  });
+  sel3.value = cur3 || 'all';
+}
+
+// ============ 資料存取 ============
+function getActivities() {
+  try {
+    return JSON.parse(localStorage.getItem('teacher-eval-activities') || '[]');
+  } catch { return []; }
+}
+
+function saveActivities(arr) {
+  localStorage.setItem('teacher-eval-activities', JSON.stringify(arr));
+}
+
+// ============ 新增活動 ============
+function addActivity() {
+  const name = document.getElementById('actName').value.trim();
+  const date = document.getElementById('actDate').value;
+  const location = document.getElementById('actLocation').value.trim();
+  const hours = parseFloat(document.getElementById('actHours').value) || 0;
+  const desc = document.getElementById('actDesc').value.trim();
+  const category = document.getElementById('actCategory').value;
+  const note = document.getElementById('actNote').value.trim();
+  let semester = document.getElementById('actSemester').value;
+  
+  if (!name) { showToast('請輸入活動名稱', 'error'); return; }
+  if (!date) { showToast('請選擇日期', 'error'); return; }
+  if (!category) { showToast('請選擇分類', 'error'); return; }
+  
+  if (semester === 'auto') semester = getSemester(date);
+  
+  const activity = {
+    id: Date.now(),
+    name, date, location, hours, desc, category, note, semester,
+    createdAt: new Date().toISOString()
+  };
+  
+  const activities = getActivities();
+  activities.push(activity);
+  saveActivities(activities);
+  populateSemesters();
+  
+  // 清空表單
+  document.getElementById('actName').value = '';
+  document.getElementById('actDate').value = '';
+  document.getElementById('actLocation').value = '';
+  document.getElementById('actHours').value = '';
+  document.getElementById('actDesc').value = '';
+  document.getElementById('actCategory').value = '';
+  document.getElementById('actNote').value = '';
+  document.getElementById('suggestBox').style.display = 'none';
+  
+  showToast('✅ 活動已新增！');
+}
+
+// ============ 自動分類建議 ============
+function updateSuggestion() {
+  const name = document.getElementById('actName').value.trim();
+  const desc = document.getElementById('actDesc').value.trim();
+  const suggestBox = document.getElementById('suggestBox');
+  const select = document.getElementById('actCategory');
+  
+  if (!name && !desc) {
+    suggestBox.style.display = 'none';
+    return;
+  }
+  
+  const result = suggestCategory(name, desc);
+  
+  if (result.category) {
+    const rule = categoryRules[result.category];
+    suggestBox.style.display = 'block';
+    suggestBox.innerHTML = `
+      <strong>💡 系統建議分類：${getCatLabel(result.category)}</strong>
+      <span class="change-btn" onclick="applySuggestion('${result.category}')">採用</span>
+      <br><span style="font-size:0.8em;color:#666;">
+        教學:${result.scores.teaching} 研究:${result.scores.research} 輔導:${result.scores.counseling} 服務:${result.scores.service}
+      </span>
+    `;
+    // 自動選擇
+    if (!select.value) {
+      select.value = result.category;
+    }
+  }
+}
+
+function applySuggestion(cat) {
+  document.getElementById('actCategory').value = cat;
+  showToast(`已選擇：${getCatLabel(cat)}`);
+}
+
+function getCatLabel(cat) {
+  const map = { teaching: '📖 教學', research: '🔬 研究', counseling: '🤝 輔導', service: '🏛️ 服務' };
+  return map[cat] || '未分類';
+}
+
+// ============ 活動列表 ============
+function renderList() {
+  const container = document.getElementById('listContainer');
+  const filterCat = document.getElementById('filterCategory').value;
+  const filterSem = document.getElementById('filterSemester').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  
+  let activities = getActivities();
+  
+  if (filterCat) activities = activities.filter(a => a.category === filterCat);
+  if (filterSem) activities = activities.filter(a => a.semester === filterSem);
+  if (search) activities = activities.filter(a => 
+    a.name.toLowerCase().includes(search) || 
+    (a.desc && a.desc.toLowerCase().includes(search))
+  );
+  
+  activities.sort((a, b) => b.date.localeCompare(a.date));
+  
+  if (activities.length === 0) {
+    container.innerHTML = `<div class="empty"><div class="icon">📭</div><p>還沒有活動紀錄</p><p style="margin-top:8px;">到「新增活動」開始記錄吧！</p></div>`;
+    return;
+  }
+  
+  container.innerHTML = activities.map(a => `
+    <div class="activity-card ${a.category}">
+      <div class="title-row">
+        <div>
+          <h3>${escapeHtml(a.name)}</h3>
+          <span class="cat-badge cat-${a.category}">${getCatLabel(a.category)}</span>
+        </div>
+        <div style="text-align:right;font-size:0.85em;color:#666;">
+          📅 ${formatDate(a.date)}<br>
+          ${a.hours > 0 ? `⏱️ ${a.hours} 小時<br>` : ''}
+          📚 ${formatSemester(a.semester)}
+        </div>
+      </div>
+      ${a.location ? `<div class="meta">📍 ${escapeHtml(a.location)}</div>` : ''}
+      ${a.desc ? `<div class="desc">${escapeHtml(a.desc)}</div>` : ''}
+      ${a.note ? `<div class="meta">📝 ${escapeHtml(a.note)}</div>` : ''}
+      <div class="actions">
+        <button onclick="openEdit(${a.id})">✏️ 編輯</button>
+        <button class="del" onclick="deleteActivity(${a.id})">🗑️ 刪除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ============ 統計分析 ============
+function renderStats() {
+  const semester = document.getElementById('statsSemester').value;
+  let activities = getActivities();
+  if (semester !== 'all') activities = activities.filter(a => a.semester === semester);
+  
+  const counts = { teaching: 0, research: 0, counseling: 0, service: 0 };
+  const hours = { teaching: 0, research: 0, counseling: 0, service: 0 };
+  
+  activities.forEach(a => {
+    if (counts[a.category] !== undefined) {
+      counts[a.category]++;
+      hours[a.category] += a.hours || 0;
+    }
+  });
+  
+  const total = activities.length;
+  
+  // 統計卡片
+  const grid = document.getElementById('statsGrid');
+  grid.innerHTML = ['teaching', 'research', 'counseling', 'service'].map(cat => {
+    const pct = total > 0 ? (counts[cat] / total * 100) : 0;
+    return `
+      <div class="stat-card ${cat}">
+        <div class="number">${counts[cat]}</div>
+        <div class="label">${getCatLabel(cat)} ${hours[cat] > 0 ? `(${hours[cat]}h)` : ''}</div>
+        <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
+        <div style="font-size:0.8em;color:#999;margin-top:4px;">${pct.toFixed(0)}%</div>
+      </div>
+    `;
+  }).join('') + `
+    <div class="stat-card" style="background:#1a237e;color:white;">
+      <div class="number" style="color:white;">${total}</div>
+      <div class="label" style="color:rgba(255,255,255,0.7);">總活動數</div>
+      <div class="bar"><div class="fill" style="width:100%;background:white;"></div></div>
+      <div style="font-size:0.8em;color:rgba(255,255,255,0.5);">${hours.teaching+hours.research+hours.counseling+hours.service} 總時數</div>
+    </div>
+  `;
+  
+  // 比例圖
+  const chart = document.getElementById('categoryChart');
+  const legend = document.getElementById('chartLegend');
+  if (total === 0) {
+    chart.innerHTML = '<div style="width:100%;text-align:center;color:#999;line-height:30px;">尚無資料</div>';
+    legend.innerHTML = '';
+  } else {
+    const cats = ['teaching', 'research', 'counseling', 'service'];
+    const colors = { teaching: '#4CAF50', research: '#2196F3', counseling: '#FF9800', service: '#9C27B0' };
+    chart.innerHTML = cats.map(cat => {
+      const pct = counts[cat] / total * 100;
+      return pct > 0 ? `<div style="width:${pct}%;background:${colors[cat]};" title="${getCatLabel(cat)}: ${counts[cat]}"></div>` : '';
+    }).join('');
+    legend.innerHTML = cats.map(cat => `
+      <span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${colors[cat]};vertical-align:middle;margin-right:4px;"></span>${getCatLabel(cat)} ${counts[cat]}</span>
+    `).join('');
+  }
+  
+  // 月度趨勢
+  const monthly = document.getElementById('monthlyChart');
+  const months = {};
+  activities.forEach(a => {
+    const m = a.date.substring(0, 7); // YYYY-MM
+    if (!months[m]) months[m] = { teaching: 0, research: 0, counseling: 0, service: 0 };
+    if (months[m][a.category] !== undefined) months[m][a.category]++;
+  });
+  const sortedMonths = Object.keys(months).sort();
+  if (sortedMonths.length === 0) {
+    monthly.innerHTML = '<p style="color:#999;text-align:center;">尚無資料</p>';
+  } else {
+    const maxVal = Math.max(...sortedMonths.map(m => 
+      months[m].teaching + months[m].research + months[m].counseling + months[m].service
+    )) || 1;
+    monthly.innerHTML = sortedMonths.map(m => {
+      const total_m = months[m].teaching + months[m].research + months[m].counseling + months[m].service;
+      const h = (total_m / maxVal) * 120 + 20;
+      return `
+        <div style="display:flex;align-items:flex-end;gap:2px;margin-bottom:6px;">
+          <div style="width:80px;font-size:0.85em;color:#666;text-align:right;padding-right:8px;">${m}</div>
+          <div style="flex:1;display:flex;gap:2px;height:${h}px;align-items:flex-end;">
+            ${months[m].teaching > 0 ? `<div style="flex:${months[m].teaching};background:#4CAF50;border-radius:3px;height:100%;min-width:4px;" title="教學:${months[m].teaching}"></div>` : ''}
+            ${months[m].research > 0 ? `<div style="flex:${months[m].research};background:#2196F3;border-radius:3px;height:100%;min-width:4px;" title="研究:${months[m].research}"></div>` : ''}
+            ${months[m].counseling > 0 ? `<div style="flex:${months[m].counseling};background:#FF9800;border-radius:3px;height:100%;min-width:4px;" title="輔導:${months[m].counseling}"></div>` : ''}
+            ${months[m].service > 0 ? `<div style="flex:${months[m].service};background:#9C27B0;border-radius:3px;height:100%;min-width:4px;" title="服務:${months[m].service}"></div>` : ''}
+          </div>
+          <div style="width:30px;font-size:0.85em;text-align:left;padding-left:4px;">${total_m}</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+// ============ 編輯 ============
+function openEdit(id) {
+  const activities = getActivities();
+  const a = activities.find(x => x.id === id);
+  if (!a) return;
+  
+  document.getElementById('editId').value = a.id;
+  document.getElementById('editName').value = a.name;
+  document.getElementById('editDate').value = a.date;
+  document.getElementById('editHours').value = a.hours || '';
+  document.getElementById('editLocation').value = a.location || '';
+  document.getElementById('editDesc').value = a.desc || '';
+  document.getElementById('editCategory').value = a.category || '';
+  document.getElementById('editNote').value = a.note || '';
+  
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+function saveEdit() {
+  const id = parseInt(document.getElementById('editId').value);
+  const activities = getActivities();
+  const idx = activities.findIndex(a => a.id === id);
+  if (idx === -1) return;
+  
+  activities[idx].name = document.getElementById('editName').value.trim();
+  activities[idx].date = document.getElementById('editDate').value;
+  activities[idx].hours = parseFloat(document.getElementById('editHours').value) || 0;
+  activities[idx].location = document.getElementById('editLocation').value.trim();
+  activities[idx].desc = document.getElementById('editDesc').value.trim();
+  activities[idx].category = document.getElementById('editCategory').value;
+  activities[idx].note = document.getElementById('editNote').value.trim();
+  activities[idx].semester = getSemester(activities[idx].date);
+  
+  saveActivities(activities);
+  populateSemesters();
+  closeEdit();
+  renderList();
+  showToast('✅ 已儲存修改');
+}
+
+// ============ 刪除 ============
+function deleteActivity(id) {
+  if (!confirm('確定要刪除這個活動嗎？')) return;
+  let activities = getActivities();
+  activities = activities.filter(a => a.id !== id);
+  saveActivities(activities);
+  populateSemesters();
+  renderList();
+  showToast('已刪除');
+}
+
+// ============ 匯出 CSV ============
+function exportCSV() {
+  const activities = getActivities();
+  if (activities.length === 0) {
+    showToast('沒有資料可匯出', 'error');
+    return;
+  }
+  
+  const filterCat = document.getElementById('filterCategory').value;
+  const filterSem = document.getElementById('filterSemester').value;
+  const search = document.getElementById('filterSearch').value.toLowerCase();
+  
+  let filtered = activities;
+  if (filterCat) filtered = filtered.filter(a => a.category === filterCat);
+  if (filterSem) filtered = filtered.filter(a => a.semester === filterSem);
+  if (search) filtered = filtered.filter(a => a.name.toLowerCase().includes(search));
+  
+  filtered.sort((a, b) => b.date.localeCompare(a.date));
+  
+  const headers = ['日期', '學期', '分類', '活動名稱', '地點', '時數', '簡述', '備註'];
+  const rows = filtered.map(a => [
+    a.date, a.semester, getCatLabel(a.category).replace(/^[^\u4e00-\u9fa5]+/, '').trim(),
+    a.name, a.location || '', a.hours || '', a.desc || '', a.note || ''
+  ]);
+  
+  // BOM for Excel UTF-8
+  let csv = '\uFEFF' + headers.join(',') + '\n';
+  rows.forEach(row => {
+    csv += row.map(field => {
+      const str = String(field).replace(/"/g, '""');
+      return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str;
+    }).join(',') + '\n';
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `教師評鑑活動_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 CSV 已匯出');
+}
+
+// ============ 工具函數 ============
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'list') renderList();
+  if (name === 'stats') renderStats();
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function formatSemester(sem) {
+  if (!sem) return '';
+  const [y, s] = sem.split('-');
+  return `${y}學年度第${s}學期`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, type = 'success') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.background = type === 'error' ? '#d32f2f' : '#333';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============ 事件監聽 ============
+document.getElementById('actName').addEventListener('input', updateSuggestion);
+document.getElementById('actDesc').addEventListener('input', updateSuggestion);
+
+// 關閉 modal 點擊背景
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+
+// ============ 初始化 ============
+populateSemesters();
+
+// 預設今天日期
+const today = new Date();
+document.getElementById('actDate').value = today.toISOString().split('T')[0];
+
+// 如果沒有任何活動，加入示範資料（可刪除）
+if (getActivities().length === 0) {
+  const demo = [
+    {
+      id: Date.now() - 5000,
+      name: "光時代科技公司產業研習",
+      date: "2026-07-20",
+      location: "台北市長安東路一段23號8樓",
+      hours: 4,
+      desc: "教育部實作場域設備精進計畫主辦，參訪光時代科技公司，AR眼鏡Meta Quest 3應用於教學",
+      category: "teaching",
+      note: "核發4小時研習證明",
+      semester: "114-2",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: Date.now() - 4000,
+      name: "ISPM 2026 國際研討會",
+      date: "2026-05-15",
+      location: "義大利米蘭",
+      hours: 40,
+      desc: "發表論文，參加國際研討會學術交流",
+      category: "research",
+      note: "有發表證明",
+      semester: "114-2",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: Date.now() - 3000,
+      name: "招生座談會",
+      date: "2026-04-20",
+      location: "明新科大",
+      hours: 2,
+      desc: "協助系上招生宣傳座談會",
+      category: "service",
+      note: "",
+      semester: "114-2",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: Date.now() - 2000,
+      name: "指導學生專題",
+      date: "2026-04-10",
+      location: "明新科大",
+      hours: 3,
+      desc: "指導學生畢業專題製作",
+      category: "counseling",
+      note: "",
+      semester: "114-2",
+      createdAt: new Date().toISOString()
+    }
+  ];
+  saveActivities(demo);
+  populateSemesters();
+}
+</script>
+</body>
+</html>
