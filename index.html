@@ -331,6 +331,9 @@ nav button:hover { background: #f0f0f5; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .stat-card .number { font-size: 2em; }
 }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+.sync-btn { position: fixed; bottom: 20px; right: 20px; padding: 10px 20px; border: none; border-radius: 25px; background: #27ae60; color: white; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 999; transition: 0.3s; }
+.sync-btn:hover { transform: scale(1.05); }
 </style>
 </head>
 <body>
@@ -649,6 +652,8 @@ async function loadRemoteData() {
     const data = await resp.json();
     remoteActivities = data.activities || [];
     localStorage.setItem('teacher-eval-activities', JSON.stringify(remoteActivities));
+    localStorage.removeItem('teacher-eval-needSync');
+    updateSyncBadge();
     dataLoaded = true;
     return remoteActivities;
   } catch (e) {
@@ -670,9 +675,48 @@ function getActivities() {
 }
 
 function saveActivities(arr) {
-  // 更新本機快取（遠端由 CC 透過 git 管理，刷新後會同步遠端）
+  // 更新本機快取
   localStorage.setItem('teacher-eval-activities', JSON.stringify(arr));
   remoteActivities = arr;
+  // 標記有未同步變更
+  localStorage.setItem('teacher-eval-needSync', '1');
+  updateSyncBadge();
+}
+
+function syncToCloud() {
+  const activities = getActivities();
+  const data = JSON.stringify({ activities: activities }, null, 2);
+  navigator.clipboard.writeText(data).then(() => {
+    showToast('📋 已複製資料到剪貼簿！貼給 CC 說「同步」即可更新雲端');
+    localStorage.removeItem('teacher-eval-needSync');
+    updateSyncBadge();
+  }).catch(() => {
+    // Fallback: show in a textarea
+    const ta = document.createElement('textarea');
+    ta.value = data;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('📋 已複製資料！貼給 CC 說「同步」即可更新雲端');
+    localStorage.removeItem('teacher-eval-needSync');
+    updateSyncBadge();
+  });
+}
+
+function updateSyncBadge() {
+  const btn = document.getElementById('syncBtn');
+  if (!btn) return;
+  const needSync = localStorage.getItem('teacher-eval-needSync') === '1';
+  if (needSync) {
+    btn.style.background = '#e74c3c';
+    btn.style.animation = 'pulse 1.5s infinite';
+    btn.textContent = '☁️ 同步到雲端 ●';
+  } else {
+    btn.style.background = '#27ae60';
+    btn.style.animation = '';
+    btn.textContent = '☁️ 同步到雲端';
+  }
 }
 
 // ============ 新增活動 ============
@@ -1067,5 +1111,7 @@ setInterval(() => {
   });
 }, 300000);
 </script>
+<button id="syncBtn" class="sync-btn" onclick="syncToCloud()">☁️ 同步到雲端</button>
+<script>updateSyncBadge();</script>
 </body>
 </html>
