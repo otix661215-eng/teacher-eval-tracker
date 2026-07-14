@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
@@ -642,12 +642,19 @@ let remoteActivities = [];
 let dataLoaded = false;
 
 async function loadRemoteData() {
+  // 如果本機已有資料，以本機為準（使用者可能已刪除/修改）
+  const local = getLocalCache();
+  if (local.length > 0) {
+    remoteActivities = local;
+    dataLoaded = true;
+    return local;
+  }
+  // 第一次使用：從遠端載入初始資料
   try {
     const resp = await fetch(DATA_URL + '?t=' + Date.now());
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     remoteActivities = data.activities || [];
-    // 同步到本機快取
     localStorage.setItem('teacher-eval-activities', JSON.stringify(remoteActivities));
     dataLoaded = true;
     return remoteActivities;
