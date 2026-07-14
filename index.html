@@ -642,14 +642,7 @@ let remoteActivities = [];
 let dataLoaded = false;
 
 async function loadRemoteData() {
-  // 如果本機已有資料，以本機為準（使用者可能已刪除/修改）
-  const local = getLocalCache();
-  if (local.length > 0) {
-    remoteActivities = local;
-    dataLoaded = true;
-    return local;
-  }
-  // 第一次使用：從遠端載入初始資料
+  // 每次都從遠端載入（遠端為權威來源，由 CC 管理）
   try {
     const resp = await fetch(DATA_URL + '?t=' + Date.now());
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -677,7 +670,7 @@ function getActivities() {
 }
 
 function saveActivities(arr) {
-  // 只更新本機快取（遠端由 CC 透過 git 管理）
+  // 更新本機快取（遠端由 CC 透過 git 管理，刷新後會同步遠端）
   localStorage.setItem('teacher-eval-activities', JSON.stringify(arr));
   remoteActivities = arr;
 }
